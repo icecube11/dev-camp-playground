@@ -12,8 +12,17 @@ const scenario = new Scenario([instanceAlice])
 const testNewChannelParams = {
   name: "test new event",
   description: "for testing...",
-  initial_members: [],
-  public: true
+  is_private: false,
+  initial_members: []
+  //public: true  // What is this doing here??
+}
+
+const testNewPrivateChannelParams = {
+  name: "test new event",
+  description: "for testing...",
+  is_private: true,
+  initial_members: []
+  //public: true
 }
 
 const testMessage = {
@@ -93,5 +102,44 @@ scenario.runTape('Can create a public event with some members', async (t, {alice
   let allMemberAddrs = get_all_members_result.Ok
   t.true(allMemberAddrs.length > 0, 'gets at least one member')
 })
+
+
+scenario.runTape('Can create a public event and a private event with no other members except creator', async (t, {alice}) => {
+
+  const register_result = await alice.callSync('event', 'register', {name: 'alice', avatar_url: ''})
+  console.log(register_result)
+  t.true(register_result.Ok.includes('alice'))
+
+  const create_result_private = await alice.callSync('event', 'create_event', {...testNewPrivateChannelParams, initial_members: [register_result.Ok]})
+  console.log(create_result_private)
+  t.deepEqual(create_result_private.Ok.length, 46)
+  
+  const get_all_members_result_private = await alice.callSync('event', 'get_members', {event_address: create_result_private.Ok})
+  console.log('private event all members:', get_all_members_result_private)
+  let allMembers_private = get_all_members_result_private.Ok
+  t.true(allMembers_private.length > 0, 'gets at least one member')
+  
+  const create_result_public = await alice.callSync('event', 'create_event', {...testNewChannelParams, initial_members: [register_result.Ok]})
+  console.log(create_result_public)
+  t.deepEqual(create_result_public.Ok.length, 46)
+
+  const get_all_members_result_public = await alice.callSync('event', 'get_members', {event_address: create_result_public.Ok})
+  console.log('public event all members:', get_all_members_result_public)
+  let allMembers_public = get_all_members_result_public.Ok
+  t.true(allMembers_public.length > 0, 'gets at least one member')
+  
+  const get_result_private = await alice.callSync('event', 'get_my_private_events', {agent_address: register_result.Ok})
+  console.log('private events: ', get_result_private)
+  t.deepEqual(get_result_private.Ok.length, 1)
+  
+  const get_result_public = await alice.callSync('event', 'get_all_public_events', {})
+  console.log('public events: ', get_result_public)
+  t.deepEqual(get_result_public.Ok.length, 1)
+  
+  const get_result = await alice.callSync('event', 'get_my_public_private_events', {agent_address: register_result.Ok})
+  console.log('public and private events: ', get_result)
+  t.deepEqual(get_result.Ok.length, 2)
+})
+
 
 

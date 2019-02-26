@@ -28,6 +28,7 @@ define_zome! {
 
 	entries: [
 		message::message_definition(),
+		event::private_event_definition(),
     	event::public_event_definition(),
         member::profile_definition(),
         anchor::anchor_definition()
@@ -46,7 +47,7 @@ define_zome! {
 			handler: member::handlers::handle_register
 		}
 		create_event: {
-			inputs: |name: String, description: String, initial_members: Vec<Address>|,
+			inputs: |name: String, description: String, initial_members: Vec<Address>, is_private: bool|,
 			outputs: |result: ZomeApiResult<Address>|,
 			handler: event::handlers::handle_create_event
 		}
@@ -59,6 +60,16 @@ define_zome! {
 			inputs: | |,
 			outputs: |result: ZomeApiResult<utils::GetLinksLoadResult<event::Event>>|,
 			handler: event::handlers::handle_get_all_public_events
+		}
+		get_my_private_events: {
+			inputs: |agent_address: HashString|,
+			outputs: |result: ZomeApiResult<utils::GetLinksLoadResult<event::Event>>|,
+			handler: event::handlers::handle_get_my_private_events
+		}
+		get_my_public_private_events: {
+			inputs: |agent_address: HashString|,
+			outputs: |result: ZomeApiResult<utils::GetLinksLoadResult<event::Event>>|,
+			handler: event::handlers::handle_get_my_public_private_events
 		}
 		get_members: {
 			inputs: |event_address: HashString|,
@@ -93,6 +104,8 @@ define_zome! {
 	        	create_event,
 	        	join_event,
 	        	get_all_public_events,
+	        	get_my_public_private_events,
+	        	get_my_private_events,
 	        	get_members,
 	        	get_member_profile,
 	        	get_my_member_profile,

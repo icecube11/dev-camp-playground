@@ -10,6 +10,7 @@ export const CreateEventForm = ({ submit }) => {
 
         const name = e.target[0].value
         const description = e.target[1].value
+        const is_private = e.target[2].type === 'checkbox' ? e.target[2].checked : e.target[2].value;
 
         if (name.length === 0) {
           return
@@ -17,7 +18,8 @@ export const CreateEventForm = ({ submit }) => {
 
         submit({
           name,
-          description
+          description,
+          is_private
         })
         e.target[0].value = ''
         e.target[1].value = ''
@@ -25,6 +27,7 @@ export const CreateEventForm = ({ submit }) => {
     > <label>Create A New Event</label>
       <input placeholder='Name...' className={style.eventName} />
       <input placeholder='Description...' />
+      <span>Private: <input name="private" type="checkbox" /></span>
       <button type='submit'>
       <svg id="add" viewBox="0 0 24 24">
         <path d="M0 0h24v24H0z" fill="none"/>

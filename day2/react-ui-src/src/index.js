@@ -53,7 +53,8 @@ class View extends React.Component {
 
       setUser: user => {
         this.setState({ user })
-        this.actions.getEvents()
+        console.log('setUser: user=', user)
+        this.actions.getEvents( user.id )
       },
 
       // --------------------------------------
@@ -128,7 +129,8 @@ class View extends React.Component {
         const eventSpec = {
           name: options.name,
           description: options.description,
-          initial_members: []
+          initial_members: [],
+          is_private: options.is_private
         }
         this.makeHolochainCall(`${instanceID}/event/create_event`, eventSpec, (result) => {
           console.log('created event', result)
@@ -136,9 +138,11 @@ class View extends React.Component {
             id: result.Ok,
             name: options.name,
             description: options.description,
+            is_private: options.is_private,
             users: []
           })
-          this.actions.getEvents()
+          console.log('Trying to get events for user id:', this.state.user)
+          this.actions.getEvents( this.state.user.id )
         })
       },
 
@@ -151,15 +155,17 @@ class View extends React.Component {
         })
       },
 
-      getEvents: () => {
-        this.makeHolochainCall(`${instanceID}/event/get_all_public_events`, {}, (result) => {
-          console.log('retrieved public events', result)
+      getEvents: userId => {
+        console.log('getEvents: userId=', userId)
+        this.makeHolochainCall(`${instanceID}/event/get_my_public_private_events`, { agent_address: userId }, (result) => {
+          console.log('retrieved public and private events', result)
           let events = result.Ok.map(({ address, entry }) => {
             return {
               id: address,
-              private: !entry.public,
+              private: !entry.public, // TODO: what is this private doing here? Its from the original get_all_public_events call
               name: entry.name,
               description: entry.description,
+              is_private: entry.is_private,
               users: []
             }
           })

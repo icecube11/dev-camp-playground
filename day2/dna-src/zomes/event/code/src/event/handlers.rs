@@ -20,12 +20,14 @@ pub fn handle_create_event(
     name: String,
     description: String,
     initial_members: Vec<Address>,
+    is_private: bool
 ) -> ZomeApiResult<Address> {
 
-    let event = Event{name, description};
+    let event = Event{name, description, is_private};
 
+    let event_type = if is_private { "private_event" } else { "public_event" };
     let entry = Entry::App(
-        "public_event".into(),
+        event_type.into(),
         event.into()
     );
 
@@ -36,16 +38,21 @@ pub fn handle_create_event(
         utils::link_entries_bidir(&member, &event_address, "member_of", "has_member")?;
     }
 
-    let anchor_entry = Entry::App(
-        "anchor".into(),
-        RawString::from("public_events").into(),
-    );
-    let anchor_address = hdk::commit_entry(&anchor_entry)?;
-    hdk::link_entries(&anchor_address, &event_address, "public_event")?;
+    if is_private {
+        hdk::link_entries(&AGENT_ADDRESS, &event_address, "private_event")?;
+    } else {
+        let anchor_entry = Entry::App(
+            "anchor".into(),
+            RawString::from("public_events").into(),
+        );
+        let anchor_address = hdk::commit_entry(&anchor_entry)?;
+        hdk::link_entries(&anchor_address, &event_address, "public_event")?;
+    }
 
     Ok(event_address)
 }
 
+// TODO: check if event is private, only allow when new joiner has already been invited by organiser
 pub fn handle_join_event(event_address: HashString) -> ZomeApiResult<()> {
     utils::link_entries_bidir(&AGENT_ADDRESS, &event_address, "member_of", "has_member")?;
     Ok(())
@@ -85,4 +92,17 @@ pub fn handle_get_all_public_events() -> ZomeApiResult<utils::GetLinksLoadResult
     );
     let anchor_address = hdk::entry_address(&anchor_entry)?;
     utils::get_links_and_load_type(&anchor_address, "public_event")
+}
+
+pub fn handle_get_my_private_events(agent_address: Address) -> ZomeApiResult<utils::GetLinksLoadResult<Event>> {
+    utils::get_links_and_load_type(&agent_address, "private_event")
+}
+
+pub fn handle_get_my_public_private_events(agent_address: Address) -> ZomeApiResult<utils::GetLinksLoadResult<Event>> {
+    let mut events = handle_get_my_private_events(agent_address)?;
+    let public_events = handle_get_all_public_events()?;
+    
+    events.extend(public_events);
+
+    Ok(events)
 }
